@@ -43,7 +43,7 @@ def get_features_sets(datafile):
     return feature_sets
 
 
-classifier = nltk.NaiveBayesClassifier.train( get_features_sets('data.txt'))
+classifier = nltk.NaiveBayesClassifier.train( get_features_sets('intention\data.txt'))
 predict_label  = classifier.classify(get_word_features('明天会下雨吗？'))
 print(predict_label)    ## get_weather
 print(classifier.prob_classify(get_word_features('明天会下雨吗？')).prob(predict_label)) # 0.9777773
