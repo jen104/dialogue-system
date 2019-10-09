@@ -18,7 +18,7 @@ from utils import print_config, save_config, load_config, test_ner
 root_path=os.getcwd()+os.sep
 flags = tf.app.flags
 flags.DEFINE_boolean("clean",       True,      "clean train folder")
-flags.DEFINE_boolean("train",       True,      "Whether train the model")
+flags.DEFINE_boolean("train",       False,      "Whether train the model")
 # configurations for the model
 flags.DEFINE_integer("seg_dim",     20,         "Embedding size for segmentation, 0 if not used")
 flags.DEFINE_integer("char_dim",    100,        "Embedding size for characters")
@@ -46,9 +46,9 @@ flags.DEFINE_string("config_file",  "config_file",  "File for config")
 flags.DEFINE_string("script",       "conlleval",    "evaluation script")
 flags.DEFINE_string("result_path",  "result",       "Path for results")
 flags.DEFINE_string("emb_file",     os.path.join(root_path+"data", "vec.txt"),  "Path for pre_trained embedding")
-flags.DEFINE_string("train_file",   os.path.join(root_path+"data", "example.train"),  "Path for train data")
-flags.DEFINE_string("dev_file",     os.path.join(root_path+"data", "example.dev"),    "Path for dev data")
-flags.DEFINE_string("test_file",    os.path.join(root_path+"data", "example.test"),   "Path for test data")
+flags.DEFINE_string("train_file",   os.path.join(root_path+"data", "train.txt"),  "Path for train data")
+flags.DEFINE_string("dev_file",     os.path.join(root_path+"data", "dev.txt"),    "Path for dev data")
+flags.DEFINE_string("test_file",    os.path.join(root_path+"data", "test.txt"),   "Path for test data")
 
 flags.DEFINE_string("model_type", "idcnn", "Model type, can be idcnn or bilstm")
 #flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
@@ -131,7 +131,7 @@ def train():
             _c, char_to_id, id_to_char = char_mapping(train_sentences, FLAGS.lower)
 
         # Create a dictionary and a mapping for tags
-        _t, tag_to_id, id_to_tag = tag_mapping(train_sentences)
+        _t, tag_to_id, id_to_tag = tag_mapping(train_sentences+dev_sentences+test_sentences)
         #with open('maps.txt','w',encoding='utf8') as f1:
             #f1.writelines(str(char_to_id)+" "+id_to_char+" "+str(tag_to_id)+" "+id_to_tag+'\n')
         with open(FLAGS.map_file, "wb") as f:

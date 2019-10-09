@@ -4,7 +4,7 @@ import os
 import shutil
 
 import tensorflow as tf
-from conlleval import return_report
+from NER.conlleval import return_report
 
 models_path = "./models"
 eval_path = "./evaluation"

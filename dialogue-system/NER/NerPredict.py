@@ -1,42 +1,21 @@
-#-*-encoding=utf8-*-
-from flask import jsonify
-from flask import Flask
-from flask import request
-import json
-import platform
-import codecs
-import logging
+# encoding=utf8
+
 import itertools
-from collections import OrderedDict
 import os
-import sys
-from gevent import monkey
-monkey.patch_all()
+import pickle
+from collections import OrderedDict
+
+import numpy as np
 import tensorflow as tf
-from model import Model
-from loader import char_mapping, tag_mapping
-from loader import augment_with_pretrained, prepare_dataset
-from utils import get_logger,load_config,create_model
-from utils import make_path
+from NER.data_utils import load_word2vec, input_from_line, BatchManager
+from NER.model import Model
+from NER.utils import get_logger, make_path, clean, create_model, save_model
+from NER.utils import print_config, save_config, load_config, test_ner
 
-from data_utils import load_word2vec, create_input, input_from_line, BatchManager
-currentPath=os.getcwd()
-sys.path.append(currentPath)
-
-root_path=os.getcwd()
-global pyversion
-if sys.version>'3':
-    pyversion='three'
-else:
-    pyversion='two'
-if pyversion=='three':
-    import pickle
-else :
-    import cPickle,pickle
 root_path=os.getcwd()+os.sep
 flags = tf.app.flags
 flags.DEFINE_boolean("clean",       True,      "clean train folder")
-flags.DEFINE_boolean("train",       True,      "Whether train the model")
+flags.DEFINE_boolean("train",       False,      "Whether train the model")
 # configurations for the model
 flags.DEFINE_integer("seg_dim",     20,         "Embedding size for segmentation, 0 if not used")
 flags.DEFINE_integer("char_dim",    100,        "Embedding size for characters")
@@ -55,12 +34,12 @@ flags.DEFINE_boolean("lower",       False,       "Wither lower case")
 
 flags.DEFINE_integer("max_epoch",   100,        "maximum training epochs")
 flags.DEFINE_integer("steps_check", 100,        "steps per checkpoint")
-flags.DEFINE_string("ckpt_path",    "ckpt",      "Path to save model")
+flags.DEFINE_string("ckpt_path",    "NER\ckpt",      "Path to save model")
 flags.DEFINE_string("summary_path", "summary",      "Path to store summaries")
 flags.DEFINE_string("log_file",     "train.log",    "File for log")
-flags.DEFINE_string("map_file",     "maps.pkl",     "file for maps")
+flags.DEFINE_string("map_file",     "NER\maps.pkl",     "file for maps")
 flags.DEFINE_string("vocab_file",   "vocab.json",   "File for vocab")
-flags.DEFINE_string("config_file",  "config_file",  "File for config")
+flags.DEFINE_string("config_file",  "NER\config_file",  "File for config")
 flags.DEFINE_string("script",       "conlleval",    "evaluation script")
 flags.DEFINE_string("result_path",  "result",       "Path for results")
 flags.DEFINE_string("emb_file",     os.path.join(root_path+"data", "vec.txt"),  "Path for pre_trained embedding")
@@ -99,37 +78,26 @@ def config_model(char_to_id, tag_to_id):
     config["zeros"] = FLAGS.zeros
     config["lower"] = FLAGS.lower
     return config
-with open(FLAGS.map_file, "rb") as f:
-    if pyversion=='three':    
-        char_to_id, id_to_char, tag_to_id, id_to_tag = pickle.load(f)
-    else:
-        char_to_id, id_to_char, tag_to_id, id_to_tag = pickle.load(f,protocol=2)
-        # make path for store log and model if not exist
-make_path(FLAGS)
-if os.path.isfile(FLAGS.config_file):
-    config = load_config(FLAGS.config_file)
-else:
-    config = config_model(char_to_id, tag_to_id)
-    save_config(config, FLAGS.config_file)
-make_path(FLAGS)
-app = Flask(__name__)
-log_path = os.path.join("log", FLAGS.log_file)
-logger = get_logger(log_path)
-tf_config = tf.ConfigProto()
-sess=tf.Session(config=tf_config)
-#sess.run(tf.global_variables_initializer()) 
-model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
-@app.route('/', methods=['POST','GET'])
 
-def get_text_input():
-    #http://127.0.0.1:5002/?inputStr="最开心"
-    text=request.args.get('inputStr/text')
-    if len(text.strip())>0:     
-        aa=model.evaluate_line(sess, input_from_line(text, char_to_id), id_to_tag)
-        return jsonify(aa)   
-    
+
+config = load_config(FLAGS.config_file)
+logger = get_logger(FLAGS.log_file)
+# limit GPU memory
+tf_config = tf.ConfigProto()
+tf_config.gpu_options.allow_growth = True
+with open(FLAGS.map_file, "rb") as f:
+    char_to_id, id_to_char, tag_to_id, id_to_tag = pickle.load(f)
+sess_eval = tf.Session(config=tf_config)
+model = create_model(sess_eval, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
+
+def evaluate_line(sentence):
+    if sentence:
+        result = model.evaluate_line(sess_eval, input_from_line(sentence, char_to_id), id_to_tag)
+        return result
 if __name__ == "__main__":   
-    app.config['JSON_AS_ASCII'] = False
-    app.run(host='127.0.0.1',port=5002)
+    # app.config['JSON_AS_ASCII'] = False
+    # app.run(host='127.0.0.1',port=5002)
+    print(evaluate_line("我想打车去宝安体育馆"))
+
  
 
