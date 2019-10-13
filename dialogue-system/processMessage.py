@@ -24,7 +24,7 @@ def processMessage(sentence):
                     dm.slot["checkWeather"]["city"] = city
                 if time:
                     dm.slot["checkWeather"]["time"] = time
-                    currentEvent = "checkWeather"
+                currentEvent = "checkWeather"
             break
         elif event == "takeTaxi":
             if entities:
@@ -93,17 +93,19 @@ def processMessage(sentence):
         if needTime==1 and needCity==1:
             return "主人，请您告诉小安您要查询天气的城市和时间。"
         if needTime == 1 and needCity == 0:
-            return "主人，请您告诉小安您要查询%s哪天的天气？"%city
+            return "主人，请您告诉小安您要查询%s哪天的天气？"%dm.slot["checkWeather"]["city"]
         if needTime == 0 and needCity == 1:
-            return "主人，请您告诉小安您要查询%s哪个城市的天气？"%time
+            return "主人，请您告诉小安您要查询%s哪个城市的天气？"%dm.slot["checkWeather"]["time"]
         if needTime == 0 and needCity == 0:
             dm.processing.remove("checkWeather")
+            dm.slot["checkWeather"]["city"],  dm.slot["checkWeather"]["time"] = '', ''
             return "主人，小安为您要查询到%s%s的天气为晴朗，微风阵阵"%(city,time)
     elif currentEvent ==  "takeTaxi":
         if not dm.slot["takeTaxi"]["destination"]:
             return "主人，请告诉小安您要去哪里？"
         else:
             dm.processing.remove("takeTaxi")
+            dm.slot["takeTaxi"]["destination"] = ''
             return "主人，小安已经为您预定好去%s的车，请您做好准备" %(place)
     else:
         #print("主人，小安没有听懂您的意思，我会继续好好学习的。")
