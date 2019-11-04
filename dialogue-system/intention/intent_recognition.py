@@ -42,7 +42,7 @@ def get_features_sets(datafile):
         feature_sets.append((feature, label))
     return feature_sets
 
-
+#要是能够采用其他的方法就好了,感觉朴素贝叶斯的方法是比较传统的方法,目前采用的人不多!
 classifier = nltk.NaiveBayesClassifier.train( get_features_sets('intention\data.txt'))
 predict_label  = classifier.classify(get_word_features('明天会下雨吗？'))
 print(predict_label)    ## get_weather
